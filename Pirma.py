@@ -146,6 +146,32 @@ def parse_fasta(fileName):
 				sequence += line.strip()
 	return sequence
 
+
+
+def find_codon_rate(protein_sequence):
+	codons = {'A':0, 'R':0, 'N':0, 'D':0, 'C':0	
+			 ,'Q':0, 'E':0, 'G':0, 'H':0, 'I':0
+			 ,'L':0, 'K':0, 'M':0, 'F':0, 'P':0	
+	         ,'O':0, 'S':0, 'U':0, 'T':0, 'W':0	
+			 ,'Y':0, 'V':0, 'B':0, 'Z':0, 'X':0	
+			 ,'J':0}
+	
+	dicodons = {}
+	for codon in codons:
+		for second_codon in codons:
+			dicodons[codon + second_codon] = 0
+	
+	for j in range(len(protein_sequence)):
+		
+		codons[protein_sequence[j][0]] = 1
+		
+		for i in range(0, len(protein_sequence[j]) -2):
+			codons[protein_sequence[j][i + 1]] += 1
+			dicodons[protein_sequence[j][i] + protein_sequence[j][i+1]] += 1
+
+	for i in codons:
+		codons[i] = codons[i] / (len(protein_sequence[j]) - 1)
+
 def process_a_sequence(sequence):
 	start_positions, stop_positions = find_codons(sequence)
 	pairs = find_start_stop_pairts(start_positions, stop_positions)
@@ -159,6 +185,9 @@ def process_a_sequence(sequence):
 	for i in range(0, len(longest_pairs)):
 		protein_sequence.append(transform_to_a_protein_sequence(sequence[longest_pairs[i][0]:longest_pairs[i][1] + 3]))
 
+	print(protein_sequence)
+	find_codon_rate(protein_sequence)
+
 	return (longest_pairs, protein_sequence)
 
 # lines = fasta_string.strip().split("\n")
@@ -168,7 +197,7 @@ def process_a_sequence(sequence):
 	return sequence
 
 
-fileName = "bacterial1.fasta"
+fileName = "mamalian2.fasta"
 
 
 sequence = parse_fasta(fileName)
