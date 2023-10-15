@@ -33,6 +33,8 @@ def transform_to_a_protein_sequence(sequence):
 
 def remove_short_fragments(codon_pairs):
 	codon_pair_index = 0
+	
+
 	while True:
 		if(codon_pair_index == len(codon_pairs)):
 			break
@@ -45,7 +47,10 @@ def remove_short_fragments(codon_pairs):
 
 
 
-def find_longest_codon_pairs(start_stop_pairs):
+def find_longest_codon_pairs(start_stop_pairs_unsorted):
+
+	start_stop_pairs = sorted(start_stop_pairs_unsorted, key=lambda x: x[1])
+
 	
 	current_stop_codon = -1
 	longest_codon_pairs = []
@@ -67,19 +72,16 @@ def find_start_stop_pairts(start_positions, stop_positions):
 
 	current_stop_position_index = 0
 
-	while start_positions and stop_positions:
-
-		if(start_positions[0] > stop_positions[current_stop_position_index]):
-			del stop_positions[current_stop_position_index]
-		else:
-			if(stop_positions[current_stop_position_index] - start_positions[0] >= 4
-				and  (stop_positions[current_stop_position_index] - start_positions[0]) % 3 == 0):
-				start_stop_pairs.append((start_positions[0], stop_positions[current_stop_position_index]))
-			del start_positions[0]
-
-
+	valid_stop_postion = 0
+	change_stop_position = 0
+	for i in range(0, len(start_positions)): 
+		for j in range(valid_stop_postion, len(stop_positions)):
+			if(start_positions[i] > stop_positions[j]):
+				change_stop_position = j + 1
+			elif (stop_positions[j] % 3 == start_positions[i] % 3):
+				start_stop_pairs.append((start_positions[i], stop_positions[j]))
+				break
 	return start_stop_pairs
-
 
 
 def find_stop_codon(sequence, position):
@@ -98,7 +100,6 @@ def find_codons(sequence):
 	start_codon = 'ATG'
 
 	start_positions = [m.start() for m in re.finditer(start_codon, sequence)]
-	print(start_positions)
 	stop_positions = []
 
 	position = 0
@@ -160,32 +161,38 @@ def find_codon_rate(protein_sequence):
 	for codon in codons:
 		for second_codon in codons:
 			dicodons[codon + second_codon] = 0
-	
+
 	for j in range(len(protein_sequence)):
 		
 		codons[protein_sequence[j][0]] = 1
 		
 		for i in range(0, len(protein_sequence[j]) -2):
 			codons[protein_sequence[j][i + 1]] += 1
-			dicodons[protein_sequence[j][i] + protein_sequence[j][i+1]] += 1
+			dicodons[protein_sequence[j][i] + protein_sequence[j][i+1]] = dicodons[protein_sequence[j][i] + protein_sequence[j][i+1]] + 1
+	
+	for j in range(len(protein_sequence)):
+		for i in codons:
+			codons[i] = codons[i] / (len(protein_sequence[j]) - 1)
+		for i in dicodons:
+			dicodons[i] = dicodons[i] / (len(protein_sequence[j]) - 2)			
 
-	for i in codons:
-		codons[i] = codons[i] / (len(protein_sequence[j]) - 1)
 
 def process_a_sequence(sequence):
 	start_positions, stop_positions = find_codons(sequence)
 	pairs = find_start_stop_pairts(start_positions, stop_positions)
-	longest_pairs = find_longest_codon_pairs(pairs)
+	
+	longest_pairs = find_longest_codon_pairs(pairs[:])
+
 
 	remove_short_fragments(longest_pairs)
-	print(longest_pairs)
 
+	print(longest_pairs)
 
 	protein_sequence = []
 	for i in range(0, len(longest_pairs)):
 		protein_sequence.append(transform_to_a_protein_sequence(sequence[longest_pairs[i][0]:longest_pairs[i][1] + 3]))
 
-	print(protein_sequence)
+	print(len(protein_sequence))
 	find_codon_rate(protein_sequence)
 
 	return (longest_pairs, protein_sequence)
@@ -196,15 +203,16 @@ def process_a_sequence(sequence):
 # sequence = "".join(lines[1:])
 	return sequence
 
+files = [""]
 
-fileName = "mamalian2.fasta"
+fileName = "bacterial2.fasta"
 
 
 sequence = parse_fasta(fileName)
 reverse_compiment = find_reverse_compliment(sequence)
 
+result = process_a_sequence(sequence)
 
-result = process_a_sequence(reverse_compiment)
 
 # Output results
 # print(f"Start codon positions: {start_positions}")
