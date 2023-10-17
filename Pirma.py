@@ -1,4 +1,5 @@
 import re
+import numpy as np
 
 START_CODON = 0
 STOP_CODON = 1
@@ -111,7 +112,6 @@ def find_codons(sequence):
 		
 		if(result != -1):
 			stop_positions.append(result)
-
 		position = position + 1
 
 	return start_positions, stop_positions
@@ -148,54 +148,49 @@ def parse_fasta(fileName):
 	return sequence
 
 
+def find_distances(frequencies):
 
-def find_codon_rate(protein_sequence):
-	codons = {'A':0, 'R':0, 'N':0, 'D':0, 'C':0	
-			 ,'Q':0, 'E':0, 'G':0, 'H':0, 'I':0
-			 ,'L':0, 'K':0, 'M':0, 'F':0, 'P':0	
-	         ,'O':0, 'S':0, 'U':0, 'T':0, 'W':0	
-			 ,'Y':0, 'V':0, 'B':0, 'Z':0, 'X':0	
-			 ,'J':0}
-	
-	dicodons = {}
-	for codon in codons:
-		for second_codon in codons:
-			dicodons[codon + second_codon] = 0
+	frequency_matrix = []
 
-	for j in range(len(protein_sequence)):
+	for frequency1 in frequencies:
+		for frequency2 in frequencies:
+			vector1 = np.array(list(frequency1.values()))
+			vector2 = np.array(list(frequency2.values()))
+			
+def find_codon_frequency(protein_sequence, codons, dicodons):
 		
-		codons[protein_sequence[j][0]] = 1
-		
-		for i in range(0, len(protein_sequence[j]) -2):
-			codons[protein_sequence[j][i + 1]] += 1
-			dicodons[protein_sequence[j][i] + protein_sequence[j][i+1]] = dicodons[protein_sequence[j][i] + protein_sequence[j][i+1]] + 1
+	codons[protein_sequence[0]] += 1
 	
-	for j in range(len(protein_sequence)):
-		for i in codons:
-			codons[i] = codons[i] / (len(protein_sequence[j]) - 1)
-		for i in dicodons:
-			dicodons[i] = dicodons[i] / (len(protein_sequence[j]) - 2)			
+	for i in range(0, len(protein_sequence) -2):
+		codons[protein_sequence[i + 1]] += 1
+		dicodons[protein_sequence[i] + protein_sequence[i+1]] = dicodons[protein_sequence[i] + protein_sequence[i+1]] + 1
 
+	return ((len(protein_sequence) - 1)) , (dicodons, (len(protein_sequence) - 2)		)
 
-def process_a_sequence(sequence):
+def process_a_sequence(sequence, codons, dicodons):
 	start_positions, stop_positions = find_codons(sequence)
 	pairs = find_start_stop_pairts(start_positions, stop_positions)
 	
 	longest_pairs = find_longest_codon_pairs(pairs[:])
 
-
 	remove_short_fragments(longest_pairs)
 
-	print(longest_pairs)
 
-	protein_sequence = []
+	protein_sequences = []
 	for i in range(0, len(longest_pairs)):
-		protein_sequence.append(transform_to_a_protein_sequence(sequence[longest_pairs[i][0]:longest_pairs[i][1] + 3]))
+		protein_sequences.append(transform_to_a_protein_sequence(sequence[longest_pairs[i][0]:longest_pairs[i][1] + 3]))
 
-	print(len(protein_sequence))
-	find_codon_rate(protein_sequence)
+	codon_frequencies = []
+	dicodon_frequencies = []
 
-	return (longest_pairs, protein_sequence)
+
+	for protein_sequence in protein_sequences:
+		codon_frequency, dicodon_frequency = find_codon_frequency(protein_sequence, codons, dicodons)
+		codon_frequencies.append(codon_frequency)
+		dicodon_frequencies.append(dicodon_frequency)
+
+
+	return (codon_frequencies, dicodon_frequencies)
 
 # lines = fasta_string.strip().split("\n")
 # description = lines[0]
@@ -203,18 +198,34 @@ def process_a_sequence(sequence):
 # sequence = "".join(lines[1:])
 	return sequence
 
-files = [""]
-
-fileName = "bacterial2.fasta"
-
-
-sequence = parse_fasta(fileName)
-reverse_compiment = find_reverse_compliment(sequence)
-
-result = process_a_sequence(sequence)
+files = ["bacterial1.fasta", "bacterial2.fasta", "bacterial3.fasta", "bacterial3.fasta"
+		,"mamalian1.fasta","mamalian2.fasta","mamalian3.fasta","mamalian4.fasta"]
 
 
+for file in files:
+	codons = {'A':0, 'R':0, 'N':0, 'D':0, 'C':0	
+		 ,'Q':0, 'E':0, 'G':0, 'H':0, 'I':0
+		 ,'L':0, 'K':0, 'M':0, 'F':0, 'P':0	
+         ,'O':0, 'S':0, 'U':0, 'T':0, 'W':0	
+		 ,'Y':0, 'V':0, 'B':0, 'Z':0, 'X':0	
+		 ,'J':0}
+	
+	dicodons = {}
+	for codon in codons:
+		for second_codon in codons:
+			dicodons[codon + second_codon] = 0
+
+	sequence = parse_fasta(file)
+	reverse_compiment = find_reverse_compliment(sequence)
+
+	result = process_a_sequence(sequence, codons, dicodons)
+	
+	print(str(len(result[0])) + " " + str(len(result[1])))
+
+
+	result = process_a_sequence(reverse_compiment, codons, dicodons)
+
+	print(str(len(result[0])) + " " + str(len(result[1])))
 # Output results
 # print(f"Start codon positions: {start_positions}")
 # print(f"Stop codon positions: {stop_positions}")
-
